@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import MessageUserDialog from "./MessageUserDialog";
 
 interface Goal {
   id: string;
   goal_text: string;
   created_at: string;
   completed: boolean;
+  user_id: string;
   profiles: {
     username: string;
   };
@@ -20,6 +24,7 @@ interface GoalFeedProps {
 const GoalFeed = ({ currentUserId }: GoalFeedProps) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
 
   useEffect(() => {
     fetchGoals();
@@ -110,7 +115,7 @@ const GoalFeed = ({ currentUserId }: GoalFeedProps) => {
         Today's Standup ({goals.length})
       </h2>
       {goals.map((goal) => (
-        <Card key={goal.id} className="hover:border-primary/30 transition-colors">
+        <Card key={goal.id} className="hover:border-primary/30 transition-colors group">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <Avatar className="h-10 w-10 border-2 border-primary/20">
@@ -126,6 +131,17 @@ const GoalFeed = ({ currentUserId }: GoalFeedProps) => {
                   {goal.completed && (
                     <span className="text-success text-xs">✓ Done</span>
                   )}
+                  {goal.user_id !== currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setSelectedUser({ id: goal.user_id, username: goal.profiles.username })}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-1" />
+                      Message
+                    </Button>
+                  )}
                 </div>
                 <p className="text-foreground">{goal.goal_text}</p>
                 <p className="text-xs text-muted-foreground mt-2">
@@ -139,6 +155,14 @@ const GoalFeed = ({ currentUserId }: GoalFeedProps) => {
           </CardContent>
         </Card>
       ))}
+      
+      <MessageUserDialog
+        open={!!selectedUser}
+        onOpenChange={(open) => !open && setSelectedUser(null)}
+        targetUserId={selectedUser?.id || ""}
+        targetUsername={selectedUser?.username || ""}
+        currentUserId={currentUserId}
+      />
     </div>
   );
 };

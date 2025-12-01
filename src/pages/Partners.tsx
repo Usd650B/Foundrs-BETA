@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -22,8 +22,43 @@ const Partners = () => {
   const [selectedPartnership, setSelectedPartnership] = useState<{ id: string; partnerId: string; partnerName: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { pendingRequests, unreadMessages } = useNotifications(user?.id || "");
+
+  // Check for partnership query parameter
+  useEffect(() => {
+    const partnershipId = searchParams.get("partnership");
+    if (partnershipId && user) {
+      loadPartnershipFromUrl(partnershipId);
+    }
+  }, [searchParams, user]);
+
+  const loadPartnershipFromUrl = async (partnershipId: string) => {
+    const { data } = await supabase
+      .from("partnerships")
+      .select("*")
+      .eq("id", partnershipId)
+      .eq("status", "active")
+      .single();
+
+    if (data) {
+      const partnerId = data.requester_id === user?.id ? data.receiver_id : data.requester_id;
+      const { data: partnerProfile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", partnerId)
+        .single();
+
+      if (partnerProfile) {
+        setSelectedPartnership({
+          id: partnershipId,
+          partnerId,
+          partnerName: partnerProfile.username
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

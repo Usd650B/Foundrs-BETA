@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Plus, X } from "lucide-react";
+import { z } from "zod";
+
+const goalSchema = z.object({
+  goal_text: z.string()
+    .trim()
+    .min(1, "Goal cannot be empty")
+    .max(100, "Goal must be less than 100 characters")
+});
 
 interface GoalInputProps {
   userId: string;
@@ -11,42 +20,63 @@ interface GoalInputProps {
 
 const GoalInput = ({ userId }: GoalInputProps) => {
   const [goal, setGoal] = useState("");
-  const [todayGoal, setTodayGoal] = useState<any>(null);
+  const [todayGoals, setTodayGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showInput, setShowInput] = useState(false);
   const { toast } = useToast();
   const maxLength = 100;
 
   useEffect(() => {
-    fetchTodayGoal();
+    fetchTodayGoals();
+
+    // Set up realtime subscription for goals
+    const channel = supabase
+      .channel("user-goals")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "goals",
+          filter: `user_id=eq.${userId}`
+        },
+        () => fetchTodayGoals()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
-  const fetchTodayGoal = async () => {
+  const fetchTodayGoals = async () => {
     const today = new Date().toISOString().split("T")[0];
     const { data, error } = await supabase
       .from("goals")
       .select("*")
       .eq("user_id", userId)
       .eq("date", today)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
 
     if (!error && data) {
-      setTodayGoal(data);
+      setTodayGoals(data);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!goal.trim() || goal.length > maxLength) return;
-
-    setLoading(true);
-    const today = new Date().toISOString().split("T")[0];
-
+    
     try {
+      const validatedData = goalSchema.parse({ goal_text: goal });
+      setLoading(true);
+      
+      const today = new Date().toISOString().split("T")[0];
+
       const { data, error } = await supabase
         .from("goals")
         .insert({
           user_id: userId,
-          goal_text: goal.trim(),
+          goal_text: validatedData.goal_text,
           date: today,
         })
         .select()
@@ -54,43 +84,86 @@ const GoalInput = ({ userId }: GoalInputProps) => {
 
       if (error) throw error;
 
-      setTodayGoal(data);
+      setTodayGoals([...todayGoals, data]);
       setGoal("");
+      setShowInput(false);
       toast({
-        title: "Goal posted!",
+        title: "Goal added!",
         description: "Now go make it happen 💪",
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: error.errors[0].message
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (todayGoal) {
+  const deleteGoal = async (goalId: string) => {
+    const { error } = await supabase
+      .from("goals")
+      .delete()
+      .eq("id", goalId);
+
+    if (!error) {
+      setTodayGoals(todayGoals.filter(g => g.id !== goalId));
+      toast({
+        title: "Goal removed",
+        description: "Goal has been deleted"
+      });
+    }
+  };
+
+  if (todayGoals.length > 0 && !showInput) {
     return (
-      <Card className="mb-8 border-success/20 bg-success/5">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">✅</div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground mb-1">Your goal for today:</p>
-              <p className="text-lg font-medium text-foreground">{todayGoal.goal_text}</p>
-              {todayGoal.completed ? (
-                <p className="text-sm text-success mt-2 font-medium">Marked as complete!</p>
-              ) : (
-                <p className="text-sm text-muted-foreground mt-2">
-                  You'll check in later today
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-8 space-y-3">
+        {todayGoals.map((goalItem) => (
+          <Card key={goalItem.id} className="border-success/20 bg-success/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">✅</div>
+                <div className="flex-1">
+                  <p className="text-lg font-medium text-foreground">{goalItem.goal_text}</p>
+                  {goalItem.completed ? (
+                    <p className="text-sm text-success mt-2 font-medium">Marked as complete!</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You'll check in later today
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteGoal(goalItem.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setShowInput(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Another Goal
+        </Button>
+      </div>
     );
   }
 
@@ -100,7 +173,7 @@ const GoalInput = ({ userId }: GoalInputProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">
-              What's your #1 goal today?
+              {todayGoals.length > 0 ? "Add another goal for today" : "What's your #1 goal today?"}
             </label>
             <Textarea
               value={goal}
@@ -116,13 +189,29 @@ const GoalInput = ({ userId }: GoalInputProps) => {
               </p>
             </div>
           </div>
-          <Button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-            disabled={loading || !goal.trim() || goal.length > maxLength}
-          >
-            {loading ? "Posting..." : "Post Today's Goal"}
-          </Button>
+          <div className="flex gap-2">
+            {todayGoals.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowInput(false);
+                  setGoal("");
+                }}
+                disabled={loading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+              disabled={loading || !goal.trim() || goal.length > maxLength}
+            >
+              {loading ? "Posting..." : todayGoals.length > 0 ? "Add Goal" : "Post Today's Goal"}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
