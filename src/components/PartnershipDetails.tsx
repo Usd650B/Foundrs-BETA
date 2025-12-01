@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { Check, CheckCheck } from "lucide-react";
 
 interface Message {
   id: string;
@@ -57,6 +58,10 @@ const PartnershipDetails = ({
   const [newMessage, setNewMessage] = useState("");
   const [newMilestone, setNewMilestone] = useState({ title: "", description: "", target_date: new Date() });
   const [newSession, setNewSession] = useState({ scheduled_at: new Date(), meeting_url: "" });
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,12 +69,21 @@ const PartnershipDetails = ({
     fetchMilestones();
     fetchVideoSessions();
 
+    // Messages channel with real-time updates
     const messagesChannel = supabase
       .channel(`messages-${partnershipId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `partnership_id=eq.${partnershipId}` },
-        () => fetchMessages()
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Mark new messages as read if they're not from current user
+            if (payload.new.sender_id !== currentUserId) {
+              markMessageAsRead(payload.new.id);
+            }
+          }
+          fetchMessages();
+        }
       )
       .subscribe();
 
@@ -82,11 +96,36 @@ const PartnershipDetails = ({
       )
       .subscribe();
 
+    // Presence channel for typing indicators
+    const presenceChannel = supabase
+      .channel(`presence-${partnershipId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const users = Object.values(state).flat() as any[];
+        const partnerPresence = users.find((u) => u.user_id === partnerId);
+        setPartnerTyping(partnerPresence?.typing || false);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: currentUserId,
+            typing: false,
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(milestonesChannel);
+      supabase.removeChannel(presenceChannel);
     };
-  }, [partnershipId]);
+  }, [partnershipId, currentUserId, partnerId]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const fetchMessages = async () => {
     const { data } = await supabase
@@ -94,7 +133,54 @@ const PartnershipDetails = ({
       .select("*")
       .eq("partnership_id", partnershipId)
       .order("created_at", { ascending: true });
-    if (data) setMessages(data);
+    
+    if (data) {
+      setMessages(data);
+      // Mark unread messages as read
+      const unreadMessages = data.filter(
+        (msg) => !msg.read && msg.sender_id !== currentUserId
+      );
+      for (const msg of unreadMessages) {
+        await markMessageAsRead(msg.id);
+      }
+    }
+  };
+
+  const markMessageAsRead = async (messageId: string) => {
+    await supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("id", messageId);
+  };
+
+  const updateTypingStatus = async (typing: boolean) => {
+    const channel = supabase.channel(`presence-${partnershipId}`);
+    await channel.track({
+      user_id: currentUserId,
+      typing,
+      online_at: new Date().toISOString()
+    });
+  };
+
+  const handleTyping = (value: string) => {
+    setNewMessage(value);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set typing to true if not already
+    if (!isTyping) {
+      setIsTyping(true);
+      updateTypingStatus(true);
+    }
+
+    // Set timeout to mark as not typing after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      updateTypingStatus(false);
+    }, 2000);
   };
 
   const fetchMilestones = async () => {
@@ -118,10 +204,18 @@ const PartnershipDetails = ({
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    // Clear typing status
+    setIsTyping(false);
+    updateTypingStatus(false);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     const { error } = await supabase.from("messages").insert({
       partnership_id: partnershipId,
       sender_id: currentUserId,
-      content: newMessage
+      content: newMessage,
+      read: false
     });
 
     if (!error) {
@@ -205,23 +299,50 @@ const PartnershipDetails = ({
                             : "bg-muted"
                         }`}
                       >
-                        <p className="text-sm">{msg.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </p>
+                        <p className="text-sm break-words">{msg.content}</p>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className="text-xs opacity-70">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                          {msg.sender_id === currentUserId && (
+                            <span className="text-xs opacity-70">
+                              {msg.read ? (
+                                <CheckCheck className="w-3 h-3" />
+                              ) : (
+                                <Check className="w-3 h-3" />
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
+                  
+                  {/* Typing indicator */}
+                  {partnerTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted rounded-lg p-3 flex items-center gap-1">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
-              <div className="flex gap-2 mt-4">
-                <Input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                />
-                <Button onClick={sendMessage}>Send</Button>
+              <div className="mt-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => handleTyping(e.target.value)}
+                    placeholder="Type your message..."
+                    onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                  />
+                  <Button onClick={sendMessage}>Send</Button>
+                </div>
               </div>
             </CardContent>
           </Card>
