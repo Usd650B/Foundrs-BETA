@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNotifications } from "@/hooks/use-notifications";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, LogOut } from "lucide-react";
 
 const Partners = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -20,6 +23,7 @@ const Partners = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { pendingRequests, unreadMessages } = useNotifications(user?.id || "");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -167,15 +171,23 @@ const Partners = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card sticky top-0 z-10 backdrop-blur-sm bg-card/95">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Accountability Partners</h1>
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>
-              Back to Dashboard
+            <h1 className="text-2xl font-bold text-foreground">Accountability Partners</h1>
+            {(pendingRequests > 0 || unreadMessages > 0) && (
+              <Badge variant="destructive" className="animate-pulse">
+                {pendingRequests + unreadMessages} new
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Dashboard
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>

@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import heroAbstract from "@/assets/hero-abstract.jpg";
+import featureAbstract from "@/assets/feature-abstract.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -23,7 +25,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-background" />
+        <div className="absolute inset-0 opacity-30">
+          <img 
+            src={heroAbstract} 
+            alt="" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-background/60 to-background/80" />
         <div className="container mx-auto px-4 py-24 relative">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium text-primary">
@@ -106,8 +115,15 @@ const Index = () => {
       </div>
 
       {/* Why This Works */}
-      <div className="bg-card border-y border-border py-24">
-        <div className="container mx-auto px-4">
+      <div className="relative bg-card border-y border-border py-24 overflow-hidden">
+        <div className="absolute right-0 top-0 w-1/3 h-full opacity-20">
+          <img 
+            src={featureAbstract} 
+            alt="" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
               Not Social Media. A Tool.
