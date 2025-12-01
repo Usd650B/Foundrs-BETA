@@ -47,26 +47,34 @@ const GoalFeed = ({ currentUserId }: GoalFeedProps) => {
 
   const fetchGoals = async () => {
     const today = new Date().toISOString().split("T")[0];
-    const { data, error } = await supabase
+    
+    // First get goals
+    const { data: goalsData, error: goalsError } = await supabase
       .from("goals")
-      .select(
-        `
-        id,
-        goal_text,
-        created_at,
-        completed,
-        profiles!inner (
-          username
-        )
-      `
-      )
+      .select("*")
       .eq("date", today)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (!error && data) {
-      setGoals(data as any);
+    if (goalsError || !goalsData) {
+      setLoading(false);
+      return;
     }
+
+    // Then get profiles for those users
+    const userIds = [...new Set(goalsData.map(g => g.user_id))];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("user_id, username")
+      .in("user_id", userIds);
+
+    // Combine data
+    const goalsWithProfiles = goalsData.map(goal => ({
+      ...goal,
+      profiles: profilesData?.find(p => p.user_id === goal.user_id) || { username: "Unknown" }
+    }));
+
+    setGoals(goalsWithProfiles as any);
     setLoading(false);
   };
 

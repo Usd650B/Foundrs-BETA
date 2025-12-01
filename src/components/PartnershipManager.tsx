@@ -50,19 +50,38 @@ const PartnershipManager = ({ currentUserId, onPartnerClick }: PartnershipManage
   }, [currentUserId]);
 
   const fetchPartnerships = async () => {
-    const { data, error } = await supabase
+    // First get partnerships
+    const { data: partnershipsData, error } = await supabase
       .from("partnerships")
-      .select(`
-        *,
-        requester_profile:profiles!partnerships_requester_id_fkey(username, founder_stage),
-        receiver_profile:profiles!partnerships_receiver_id_fkey(username, founder_stage)
-      `)
+      .select("*")
       .or(`requester_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      setPartnerships(data as any);
+    if (error || !partnershipsData) {
+      setLoading(false);
+      return;
     }
+
+    // Get all unique user IDs we need profiles for
+    const userIds = [...new Set([
+      ...partnershipsData.map(p => p.requester_id),
+      ...partnershipsData.map(p => p.receiver_id)
+    ])];
+
+    // Fetch profiles for those users
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("user_id, username, founder_stage")
+      .in("user_id", userIds);
+
+    // Combine data
+    const partnershipsWithProfiles = partnershipsData.map(partnership => ({
+      ...partnership,
+      requester_profile: profilesData?.find(p => p.user_id === partnership.requester_id),
+      receiver_profile: profilesData?.find(p => p.user_id === partnership.receiver_id)
+    }));
+
+    setPartnerships(partnershipsWithProfiles as any);
     setLoading(false);
   };
 
