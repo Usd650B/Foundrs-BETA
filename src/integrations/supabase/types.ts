@@ -44,32 +44,194 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          partnership_id: string
+          read: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          partnership_id: string
+          read?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          partnership_id?: string
+          read?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnerships: {
         Row: {
           created_at: string
+          id: string
+          message: string | null
+          receiver_id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["partnership_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["partnership_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["partnership_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
           current_streak: number | null
+          founder_stage: Database["public"]["Enums"]["founder_stage"] | null
           id: string
           longest_streak: number | null
           user_id: string
           username: string
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           current_streak?: number | null
+          founder_stage?: Database["public"]["Enums"]["founder_stage"] | null
           id?: string
           longest_streak?: number | null
           user_id: string
           username: string
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           current_streak?: number | null
+          founder_stage?: Database["public"]["Enums"]["founder_stage"] | null
           id?: string
           longest_streak?: number | null
           user_id?: string
           username?: string
         }
         Relationships: []
+      }
+      shared_milestones: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          partnership_id: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          partnership_id: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          partnership_id?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_milestones_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_sessions: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          meeting_url: string | null
+          notes: string | null
+          partnership_id: string
+          scheduled_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_url?: string | null
+          notes?: string | null
+          partnership_id: string
+          scheduled_at: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          meeting_url?: string | null
+          notes?: string | null
+          partnership_id?: string
+          scheduled_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_sessions_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -79,7 +241,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      founder_stage:
+        | "idea"
+        | "mvp"
+        | "early_revenue"
+        | "scaling"
+        | "established"
+      partnership_status: "pending" | "active" | "declined" | "ended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -206,6 +374,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      founder_stage: ["idea", "mvp", "early_revenue", "scaling", "established"],
+      partnership_status: ["pending", "active", "declined", "ended"],
+    },
   },
 } as const

@@ -88,6 +88,9 @@ const Dashboard = () => {
           <h1 className="text-2xl font-bold text-foreground">Daily Standup</h1>
           <div className="flex items-center gap-4">
             <StreakDisplay userId={user.id} />
+            <Button variant="outline" onClick={() => navigate("/partners")}>
+              Partners
+            </Button>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
