@@ -80,8 +80,8 @@ const PartnershipManager = ({ currentUserId, onPartnerClick }: PartnershipManage
       });
     } else {
       toast({
-        title: status === "active" ? "Partnership Accepted!" : "Request Declined",
-        description: status === "active" 
+        title: newStatus === "active" ? "Partnership Accepted!" : "Request Declined",
+        description: newStatus === "active" 
           ? "You can now chat and track milestones together"
           : "Partnership request declined"
       });
