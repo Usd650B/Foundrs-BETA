@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useNotifications = (userId: string) => {
@@ -29,7 +29,6 @@ export const useNotifications = (userId: string) => {
 
     fetchNotifications();
 
-    // Set up real-time subscriptions
     const notificationsChannel = supabase
       .channel("notifications-feed")
       .on(

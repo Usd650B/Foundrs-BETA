@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, X } from "lucide-react";
 import { z } from "zod";
@@ -23,6 +26,13 @@ const GoalInput = ({ userId }: GoalInputProps) => {
   const [todayGoals, setTodayGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showInput, setShowInput] = useState(false);
+  const [dueAt, setDueAt] = useState<string>("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high" | "critical">("medium");
+  const [successMetric, setSuccessMetric] = useState("");
+  const [blockers, setBlockers] = useState("");
+  const [motivation, setMotivation] = useState("");
+  const [joinLimit, setJoinLimit] = useState<number>(3);
+  const [joinConditions, setJoinConditions] = useState("");
   const { toast } = useToast();
   const maxLength = 100;
 
@@ -78,6 +88,13 @@ const GoalInput = ({ userId }: GoalInputProps) => {
           user_id: userId,
           goal_text: validatedData.goal_text,
           date: today,
+          due_at: dueAt ? new Date(dueAt).toISOString() : null,
+          priority,
+          success_metric: successMetric.trim() || null,
+          blockers: blockers.trim() || null,
+          motivation: motivation.trim() || null,
+          join_conditions: joinConditions.trim() || null,
+          join_limit: joinLimit,
         })
         .select()
         .single();
@@ -86,6 +103,13 @@ const GoalInput = ({ userId }: GoalInputProps) => {
 
       setTodayGoals([...todayGoals, data]);
       setGoal("");
+      setDueAt("");
+      setPriority("medium");
+      setSuccessMetric("");
+      setBlockers("");
+      setMotivation("");
+      setJoinConditions("");
+      setJoinLimit(3);
       setShowInput(false);
       toast({
         title: "Goal added!",
@@ -189,6 +213,87 @@ const GoalInput = ({ userId }: GoalInputProps) => {
               </p>
             </div>
           </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Time limit</Label>
+              <Input
+                type="datetime-local"
+                value={dueAt}
+                onChange={(e) => setDueAt(e.target.value)}
+                className="w-full"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Priority</Label>
+              <Select value={priority} onValueChange={(value) => setPriority(value as typeof priority)} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Join limit (max 10)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={joinLimit}
+                onChange={(e) => {
+                  const value = Math.min(10, Math.max(1, Number(e.target.value)));
+                  setJoinLimit(value);
+                }}
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">Only {joinLimit} people can join this goal.</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Success metric</Label>
+              <Input
+                placeholder="e.g. Close 3 new leads"
+                value={successMetric}
+                onChange={(e) => setSuccessMetric(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Potential blockers</Label>
+              <Input
+                placeholder="What could slow you down?"
+                value={blockers}
+                onChange={(e) => setBlockers(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label className="text-sm font-medium text-foreground">Motivation / Why it matters</Label>
+              <Textarea
+                placeholder="Remind yourself why this goal matters"
+                value={motivation}
+                onChange={(e) => setMotivation(e.target.value)}
+                className="resize-none"
+                disabled={loading}
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label className="text-sm font-medium text-foreground">Join conditions</Label>
+              <Textarea
+                placeholder="List any requirements someone must meet before joining this goal"
+                value={joinConditions}
+                onChange={(e) => setJoinConditions(e.target.value)}
+                className="resize-none"
+                disabled={loading}
+                maxLength={200}
+              />
+            </div>
+          </div>
           <div className="flex gap-2">
             {todayGoals.length > 0 && (
               <Button
@@ -197,6 +302,13 @@ const GoalInput = ({ userId }: GoalInputProps) => {
                 onClick={() => {
                   setShowInput(false);
                   setGoal("");
+                  setDueAt("");
+                  setPriority("medium");
+                  setSuccessMetric("");
+                  setBlockers("");
+                  setMotivation("");
+                  setJoinConditions("");
+                  setJoinLimit(3);
                 }}
                 disabled={loading}
                 className="flex-1"

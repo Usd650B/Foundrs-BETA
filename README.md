@@ -1,73 +1,75 @@
-# Welcome to your Lovable project
+# Foundrs - Modern Web Application
 
-## Project info
+A modern web application built with React, TypeScript, and Vite, featuring a clean architecture and responsive design.
 
-**URL**: https://lovable.dev/projects/ff6c282c-3382-4dab-9e0e-4a9d8e2e5205
+## Getting Started
 
-## How can I edit this code?
+### Prerequisites
 
-There are several ways of editing your application.
+- Node.js (v16 or later)
+- npm (v7 or later) or yarn
 
-**Use Lovable**
+### Installation
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ff6c282c-3382-4dab-9e0e-4a9d8e2e5205) and start prompting.
+1. Clone the repository:
+   ```sh
+   git clone <YOUR_REPOSITORY_URL>
+   cd foundrs
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
 
-**Use your preferred IDE**
+3. Start the development server:
+   ```sh
+   npm run dev
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+4. Open [http://localhost:5173](http://localhost:5173) to view it in your browser.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Building for Production
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+This will create a production-ready build in the `dist` directory.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+## Project Structure
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+/src
+├── components/    # Reusable UI components
+├── pages/         # Application pages and routes
+├── hooks/         # Custom React hooks
+├── lib/           # Utility functions and configurations
+├── integrations/  # Third-party service integrations
+└── assets/        # Static assets like images and fonts
+```
 
-## What technologies are used for this project?
+## Tech Stack
 
-This project is built with:
+- ⚡ [Vite](https://vitejs.dev/) - Next Generation Frontend Tooling
+- ⚛️ [React 18](https://reactjs.org/) - A JavaScript library for building user interfaces
+- 🎨 [shadcn/ui](https://ui.shadcn.com/) - Beautifully designed components
+- 🎨 [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
+- 📦 [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
+- 🔄 [TanStack Query](https://tanstack.com/query) - Data fetching and state management
+- 🔒 [Supabase](https://supabase.com/) - Backend services (auth, database, storage)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Deployment
 
-## How can I deploy this project?
+This project can be deployed to any static hosting service that supports modern JavaScript applications:
 
-Simply open [Lovable](https://lovable.dev/projects/ff6c282c-3382-4dab-9e0e-4a9d8e2e5205) and click on Share -> Publish.
+- [Vercel](https://vercel.com/)
+- [Netlify](https://www.netlify.com/)
+- [Cloudflare Pages](https://pages.cloudflare.com/)
+- [GitHub Pages](https://pages.github.com/)
 
-## Can I connect a custom domain to my Lovable project?
+### Vercel Deployment
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=YOUR_REPO_URL)

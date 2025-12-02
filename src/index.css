@@ -113,5 +113,102 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography scale - Notion/Slack style */
+  h1 {
+    @apply text-2xl font-bold text-foreground;
+    line-height: 1.2;
+  }
+
+  h2 {
+    @apply text-xl font-bold text-foreground;
+    line-height: 1.3;
+  }
+
+  h3 {
+    @apply text-lg font-semibold text-foreground;
+    line-height: 1.4;
+  }
+
+  h4 {
+    @apply text-base font-semibold text-foreground;
+    line-height: 1.4;
+  }
+
+  h5 {
+    @apply text-sm font-semibold text-foreground;
+    line-height: 1.4;
+  }
+
+  h6 {
+    @apply text-xs font-semibold text-foreground;
+    line-height: 1.4;
+  }
+
+  p {
+    @apply text-sm text-foreground;
+    line-height: 1.5;
+  }
+
+  /* Small text elements */
+  small {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* Lists with proper styling */
+  ul, ol {
+    @apply text-sm text-foreground;
+    padding-left: 1.5rem;
+  }
+
+  li {
+    @apply leading-relaxed;
+    margin-bottom: 0.25rem;
+  }
+
+  ul li::marker {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Links */
+  a {
+    @apply text-sm text-primary hover:text-primary/80 transition-colors;
+  }
+
+  /* Code blocks */
+  code {
+    @apply text-xs bg-muted px-1.5 py-0.5 rounded font-mono text-foreground;
+  }
+
+  pre {
+    @apply text-sm bg-muted p-3 rounded-lg overflow-x-auto;
+  }
+
+  pre code {
+    @apply bg-transparent p-0;
+  }
+
+  /* Blockquotes */
+  blockquote {
+    @apply border-l-2 border-border pl-4 italic text-sm text-muted-foreground;
+  }
+
+  /* Tables */
+  table {
+    @apply text-sm w-full border-collapse;
+  }
+
+  th, td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+
+  th {
+    @apply font-semibold bg-muted/50;
   }
 }

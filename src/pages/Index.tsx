@@ -2,8 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import heroAbstract from "@/assets/hero-abstract.jpg";
-import featureAbstract from "@/assets/feature-abstract.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,29 +23,22 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <img 
-            src={heroAbstract} 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-background/80 via-background/60 to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-background" />
         <div className="container mx-auto px-4 py-24 relative">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium text-primary">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              For founders who ship
+              A calm space for indie builders
             </div>
             
             <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
-              Daily Standup for
-              <span className="block text-primary mt-2">Founders</span>
+              A gentle daily standup for
+              <span className="block text-primary mt-2">focused founders</span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Stay accountable. Stay motivated. Post your daily goal, see what others are building, 
-              and keep your streak alive.
+              Take a breath, set one intention, and share it with people on the same path. Light check-ins, soft nudges, 
+              and a community that celebrates steady progress.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -56,7 +47,7 @@ const Index = () => {
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 text-lg"
                 onClick={() => navigate(isLoggedIn ? "/dashboard" : "/auth")}
               >
-                {isLoggedIn ? "Go to Dashboard" : "Start Your Standup"}
+                {isLoggedIn ? "Return to your flow" : "Begin your check-in"}
               </Button>
               {!isLoggedIn && (
                 <Button
@@ -65,7 +56,7 @@ const Index = () => {
                   className="font-semibold px-8 text-lg"
                   onClick={() => navigate("/auth")}
                 >
-                  Sign In
+                  Already here? Sign in
                 </Button>
               )}
             </div>
@@ -115,15 +106,8 @@ const Index = () => {
       </div>
 
       {/* Why This Works */}
-      <div className="relative bg-card border-y border-border py-24 overflow-hidden">
-        <div className="absolute right-0 top-0 w-1/3 h-full opacity-20">
-          <img 
-            src={featureAbstract} 
-            alt="" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="container mx-auto px-4 relative">
+      <div className="bg-card border-y border-border py-24">
+        <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12 text-foreground">
               Not Social Media. A Tool.

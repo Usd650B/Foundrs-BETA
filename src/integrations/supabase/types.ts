@@ -21,6 +21,14 @@ export type Database = {
           date: string
           goal_text: string
           id: string
+          due_at: string | null
+          priority: 'low' | 'medium' | 'high' | 'critical' | null
+          success_metric: string | null
+          blockers: string | null
+          motivation: string | null
+          join_conditions: string | null
+          join_limit: number | null
+          join_current_count: number | null
           updated_at: string
           user_id: string
         }
@@ -30,6 +38,14 @@ export type Database = {
           date?: string
           goal_text: string
           id?: string
+          due_at?: string | null
+          priority?: 'low' | 'medium' | 'high' | 'critical' | null
+          success_metric?: string | null
+          blockers?: string | null
+          motivation?: string | null
+          join_conditions?: string | null
+          join_limit?: number | null
+          join_current_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -39,10 +55,26 @@ export type Database = {
           date?: string
           goal_text?: string
           id?: string
+          due_at?: string | null
+          priority?: 'low' | 'medium' | 'high' | 'critical' | null
+          success_metric?: string | null
+          blockers?: string | null
+          motivation?: string | null
+          join_conditions?: string | null
+          join_limit?: number | null
+          join_current_count?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          }
+        ]
       }
       messages: {
         Row: {
@@ -231,6 +263,82 @@ export type Database = {
             referencedRelation: "partnerships"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          subscription: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          subscription: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          subscription?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          message: string
+          read: boolean
+          type: string
+          created_at: string
+          updated_at: string
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          message: string
+          read?: boolean
+          type?: string
+          created_at?: string
+          updated_at?: string
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          message?: string
+          read?: boolean
+          type?: string
+          created_at?: string
+          updated_at?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }

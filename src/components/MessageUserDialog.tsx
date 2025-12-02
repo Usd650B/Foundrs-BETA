@@ -22,6 +22,11 @@ interface MessageUserDialogProps {
   targetUserId: string;
   targetUsername: string;
   currentUserId: string;
+  goalId?: string;
+  goalTitle?: string;
+  joinConditions?: string | null;
+  joinLimit?: number | null;
+  joinCurrentCount?: number | null;
 }
 
 const MessageUserDialog = ({
@@ -29,13 +34,21 @@ const MessageUserDialog = ({
   onOpenChange,
   targetUserId,
   targetUsername,
-  currentUserId
+  currentUserId,
+  goalId,
+  goalTitle,
+  joinConditions,
+  joinLimit,
+  joinCurrentCount,
 }: MessageUserDialogProps) => {
   const [message, setMessage] = useState("");
   const [existingPartnership, setExistingPartnership] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const limit = Math.min(Math.max(joinLimit ?? 3, 1), 10);
+  const usedSlots = Math.min(joinCurrentCount ?? 0, limit);
+  const remainingSlots = Math.max(0, limit - usedSlots);
 
   useEffect(() => {
     if (open && targetUserId) {
@@ -55,6 +68,24 @@ const MessageUserDialog = ({
 
   const handleSendMessage = async () => {
     try {
+      if (!goalId) {
+        toast({
+          variant: "destructive",
+          title: "Goal unavailable",
+          description: "We couldn't find this goal anymore. Please refresh and try again."
+        });
+        return;
+      }
+
+      if (remainingSlots <= 0) {
+        toast({
+          variant: "destructive",
+          title: "Goal full",
+          description: "This goal has no more spots available."
+        });
+        return;
+      }
+
       const validatedData = messageSchema.parse({ message });
       setLoading(true);
 
@@ -73,6 +104,21 @@ const MessageUserDialog = ({
           return;
         }
       }
+
+      let reservationMade = false;
+      const { data: reserved, error: reserveError } = await supabase
+        .rpc("reserve_goal_join_slot", { goal_uuid: goalId });
+
+      if (reserveError) throw reserveError;
+      if (!reserved) {
+        toast({
+          variant: "destructive",
+          title: "Goal full",
+          description: "This goal just filled up. Try another one!"
+        });
+        return;
+      }
+      reservationMade = true;
 
       // Send partnership request
       const { error } = await supabase.from("partnerships").insert({
@@ -102,19 +148,37 @@ const MessageUserDialog = ({
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to send partnership request"
+          description: error instanceof Error ? error.message : "Failed to send partnership request"
         });
+      }
+
+      if (goalId) {
+        await supabase.rpc("release_goal_join_slot", { goal_uuid: goalId });
       }
     } finally {
       setLoading(false);
     }
   };
 
+  const joinDetails = (
+    <div className="space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+      <p className="text-sm font-semibold">Goal</p>
+      <p className="text-sm text-foreground">{goalTitle || "Goal details unavailable"}</p>
+      <div className="text-xs text-muted-foreground">
+        Join conditions:
+        <span className="text-foreground font-medium"> {joinConditions || "None specified"}</span>
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Slots left: <span className="text-foreground font-semibold">{remainingSlots}</span>/{limit}
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Connect with {targetUsername}</DialogTitle>
+          <DialogTitle>Join {targetUsername}'s Goal</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
@@ -133,6 +197,8 @@ const MessageUserDialog = ({
             </div>
           </div>
 
+          {joinDetails}
+
           {existingPartnership?.status === "active" ? (
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-4">
@@ -146,10 +212,10 @@ const MessageUserDialog = ({
             <>
               <div>
                 <label className="text-sm font-medium text-foreground">
-                  Introduce yourself and why you'd like to be partners:
+                  Introduce yourself and why you'd like to join this goal:
                 </label>
                 <Textarea
-                  placeholder={`Hey ${targetUsername}, I saw your goal today and would love to be accountability partners!`}
+                  placeholder={`Hey ${targetUsername}, I'd like to join your goal!`}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
@@ -170,7 +236,7 @@ const MessageUserDialog = ({
                 </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || loading}
+                  disabled={!message.trim() || loading || remainingSlots <= 0}
                 >
                   {loading ? "Sending..." : "Send Request"}
                 </Button>

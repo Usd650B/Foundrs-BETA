@@ -7,6 +7,11 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Partners from "./pages/Partners";
+import Notifications from "./pages/Notifications";
+import Mailroom from "./pages/Mailroom";
+import Profile from "./pages/Profile";
+import ProfileView from "./pages/ProfileView";
+import MyGoals from "./pages/MyGoals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +27,11 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/partners" element={<Partners />} />
+          <Route path="/mailroom" element={<Mailroom />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/view/:userId" element={<ProfileView />} />
+          <Route path="/my-goals" element={<MyGoals />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
