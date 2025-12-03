@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import GoalInput from "@/components/GoalInput";
 import GoalFeed from "@/components/GoalFeed";
 import StreakDisplay from "@/components/StreakDisplay";
+import OnboardingGuide from "@/components/OnboardingGuide";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { ProfilePhotoUpload } from "@/components/ProfilePhotoUpload";
 import { User } from "@supabase/supabase-js";
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const [editingUsername, setEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -82,6 +84,32 @@ const Dashboard = () => {
       clearInterval(interval);
     };
   }, [navigate, toast]);
+
+  useEffect(() => {
+    try {
+      const onboardingCompleted = localStorage.getItem("foundrs:onboardingCompleted") === "true";
+      const onboardingPending = localStorage.getItem("foundrs:onboardingPending") === "true";
+      if (!onboardingCompleted || onboardingPending) {
+        setShowOnboarding(true);
+      }
+    } catch (error) {
+      console.warn("Unable to read onboarding flags", error);
+    }
+  }, []);
+
+  const finalizeOnboarding = () => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem("foundrs:onboardingCompleted", "true");
+      localStorage.removeItem("foundrs:onboardingPending");
+    } catch (error) {
+      console.warn("Unable to persist onboarding completion", error);
+    }
+  };
+
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -182,7 +210,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-14 items-center px-4 gap-3">
@@ -278,24 +307,36 @@ const Dashboard = () => {
               </Button>
             </nav>
 
-            {/* Daily pulse */}
-            <div className="p-4 rounded-lg border border-border bg-card/60 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Daily pulse</p>
-              <p className="text-sm text-foreground">
-                {profile?.username ? `${profile.username}, keep your streak alive before 11pm.` : "Lock today's goal before the day ends."}
-              </p>
-            </div>
-
-            {/* Streak Display */}
-            <div className="pt-4 border-t border-border">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                Your Progress
-              </h3>
-              <StreakDisplay userId={user.id} />
+            {/* Daily Pulse & Streak */}
+            <div className="pt-4 border-t border-border space-y-3">
+              <div className="rounded-xl border border-border/70 bg-card/60 px-4 py-3 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+                  Daily pulse
+                </p>
+                <p className="mt-1 text-sm text-foreground leading-snug">
+                  {profile?.username
+                    ? `${profile.username}, keep your streak alive before 11pm.`
+                    : "Lock today's goal before the day ends."}
+                </p>
+              </div>
+              <StreakDisplay
+                userId={user.id}
+                compact
+                className="border border-border/70 shadow-sm"
+              />
             </div>
 
             {/* Account Actions */}
             <div className="pt-4 border-t border-border space-y-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start h-8 text-sm"
+                onClick={() => setShowOnboarding(true)}
+              >
+                <ListChecks className="mr-2 h-4 w-4" />
+                Onboarding tour
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -435,7 +476,7 @@ const Dashboard = () => {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-xl font-bold">Goal Feed</h2>
               <span className="text-xs text-muted-foreground">Live from the community</span>
             </div>
@@ -443,7 +484,13 @@ const Dashboard = () => {
           </div>
         </main>
       </div>
-    </div>
+      </div>
+      <OnboardingGuide
+        open={showOnboarding}
+        onClose={dismissOnboarding}
+        onComplete={finalizeOnboarding}
+      />
+    </>
   );
 };
 

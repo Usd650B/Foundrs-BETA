@@ -33,6 +33,14 @@ interface PartnershipCard {
   isIncomingPending: boolean;
 }
 
+const formatDisplayName = (raw?: string | null) => {
+  if (!raw) return "Founder";
+  const trimmed = raw.trim();
+  if (!trimmed) return "Founder";
+  const [localPart] = trimmed.split("@");
+  return localPart || "Founder";
+};
+
 const Partners = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -68,7 +76,8 @@ const Partners = () => {
   const filteredDiscoverProfiles = discoverProfiles.filter((founder) => {
     const matchesStage = stageFilter === "all" || founder.founder_stage === stageFilter;
     const term = searchTerm.toLowerCase();
-    const matchesTerm = founder.username.toLowerCase().includes(term) ||
+    const displayName = formatDisplayName(founder.username).toLowerCase();
+    const matchesTerm = displayName.includes(term) ||
       (founder.bio || "").toLowerCase().includes(term);
     const alreadyConnected = partnerships.some(
       (p) => p.partnerId === founder.user_id && p.status !== "declined"
@@ -369,62 +378,6 @@ const Partners = () => {
     );
   }
 
-  if (!user || !profile) return null;
-
-  if (isEditingProfile) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border bg-card">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Complete Your Profile</h1>
-          </div>
-        </header>
-
-        <main className="container mx-auto px-4 py-8 max-w-2xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tell us about your journey</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>What stage is your startup at?</Label>
-                <Select
-                  value={profile.founder_stage}
-                  onValueChange={(value) => setProfile({ ...profile, founder_stage: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="idea">💡 Idea Stage</SelectItem>
-                    <SelectItem value="mvp">🚀 Building MVP</SelectItem>
-                    <SelectItem value="early_revenue">💰 Early Revenue</SelectItem>
-                    <SelectItem value="scaling">📈 Scaling</SelectItem>
-                    <SelectItem value="established">🏢 Established</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Bio</Label>
-                <Textarea
-                  value={profile.bio || ""}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  placeholder="Tell potential partners about what you're building..."
-                  rows={4}
-                />
-              </div>
-
-              <Button onClick={() => updateProfile()} className="w-full">
-                Save & Continue
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card sticky top-0 z-10 backdrop-blur-sm bg-card/95">
@@ -538,50 +491,53 @@ const Partners = () => {
                       </CardContent>
                     </Card>
                   ) : (
-                    filteredDiscoverProfiles.map((founder) => (
-                      <Card
-                        key={founder.user_id}
-                        className="border-border/60 bg-background/70 shadow-sm hover:shadow-md transition-all"
-                      >
-                        <CardContent className="p-4 space-y-2">
-                          <div className="flex items-start gap-3">
-                            <UserAvatar
-                              avatarUrl={founder.avatar_url}
-                              username={founder.username}
-                              size="md"
-                              className="h-9 w-9"
-                            />
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold leading-tight">
-                                {founder.username || "Founder"}
-                              </p>
-                              {founder.founder_stage && (
-                                <Badge variant="outline" className="capitalize text-[10px]">
-                                  {founder.founder_stage.replace("_", " ")}
-                                </Badge>
-                              )}
-                              <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
-                                {founder.bio || "No bio yet."}
-                              </p>
+                    filteredDiscoverProfiles.map((founder) => {
+                      const displayName = formatDisplayName(founder.username);
+                      return (
+                        <Card
+                          key={founder.user_id}
+                          className="border-border/60 bg-background/70 shadow-sm hover:shadow-md transition-all"
+                        >
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <UserAvatar
+                                avatarUrl={founder.avatar_url}
+                                username={displayName}
+                                size="md"
+                                className="h-9 w-9"
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold leading-tight">
+                                  {displayName}
+                                </p>
+                                {founder.founder_stage && (
+                                  <Badge variant="outline" className="capitalize text-[10px]">
+                                    {founder.founder_stage.replace("_", " ")}
+                                  </Badge>
+                                )}
+                                <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
+                                  {founder.bio || "No bio yet."}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 h-8 px-3 text-xs"
-                              onClick={() => {
-                                setRequestTarget(founder);
-                                setRequestNote("");
-                              }}
-                            >
-                              <UserPlus className="h-3.5 w-3.5" />
-                              Request
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 h-8 px-3 text-xs"
+                                onClick={() => {
+                                  setRequestTarget(founder);
+                                  setRequestNote("");
+                                }}
+                              >
+                                <UserPlus className="h-3.5 w-3.5" />
+                                Request
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
                   )}
                 </div>
               </section>
@@ -606,89 +562,92 @@ const Partners = () => {
                   </Card>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {partnerships.map((partner) => (
-                      <Card
-                        key={partner.id}
-                        className="border-border/60 bg-background/70 shadow-sm hover:shadow-md transition-all"
-                      >
-                        <CardContent className="p-4 space-y-2">
-                          <div className="flex items-start gap-3">
-                            <UserAvatar
-                              avatarUrl={partner.partnerProfile?.avatar_url}
-                              username={partner.partnerProfile?.username}
-                              size="md"
-                              className="h-9 w-9"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <div>
-                                  <p className="text-sm font-semibold leading-tight">
-                                    {partner.partnerProfile?.username || "Partner"}
-                                  </p>
-                                  {partner.partnerProfile?.founder_stage && (
-                                    <Badge variant="outline" className="capitalize text-[10px]">
-                                      {partner.partnerProfile.founder_stage.replace("_", " ")}
-                                    </Badge>
-                                  )}
+                    {partnerships.map((partner) => {
+                      const partnerName = formatDisplayName(partner.partnerProfile?.username);
+                      return (
+                        <Card
+                          key={partner.id}
+                          className="border-border/60 bg-background/70 shadow-sm hover:shadow-md transition-all"
+                        >
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <UserAvatar
+                                avatarUrl={partner.partnerProfile?.avatar_url}
+                                username={partnerName}
+                                size="md"
+                                className="h-9 w-9"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div>
+                                    <p className="text-sm font-semibold leading-tight">
+                                      {partnerName}
+                                    </p>
+                                    {partner.partnerProfile?.founder_stage && (
+                                      <Badge variant="outline" className="capitalize text-[10px]">
+                                        {partner.partnerProfile.founder_stage.replace("_", " ")}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Badge
+                                    variant="secondary"
+                                    className={
+                                      partner.status === "active" ? "bg-emerald-500/20 text-emerald-700" : undefined
+                                    }
+                                  >
+                                    {partner.status}
+                                  </Badge>
                                 </div>
-                                <Badge
-                                  variant="secondary"
-                                  className={
-                                    partner.status === "active" ? "bg-emerald-500/20 text-emerald-700" : undefined
-                                  }
-                                >
-                                  {partner.status}
-                                </Badge>
+                                <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
+                                  {partner.partnerProfile?.bio || "No bio yet."}
+                                </p>
                               </div>
-                              <p className="mt-2 text-xs text-muted-foreground line-clamp-3">
-                                {partner.partnerProfile?.bio || "No bio yet."}
-                              </p>
                             </div>
-                          </div>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 h-8 px-3 text-xs"
-                              onClick={() => setMessagePartner(partner)}
-                            >
-                              <MessageCircle className="h-3.5 w-3.5" />
-                              Message
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 h-8 px-3 text-xs"
-                              onClick={() => setMilestonePartner(partner)}
-                              disabled={partner.status !== "active"}
-                            >
-                              <Flag className="h-3.5 w-3.5" />
-                              Milestone
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 h-8 px-3 text-xs"
-                              onClick={() => setMeetingPartner(partner)}
-                              disabled={partner.status !== "active"}
-                            >
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              Meeting link
-                            </Button>
-                            {partner.isIncomingPending && (
+                            <div className="flex flex-wrap gap-2 text-xs">
                               <Button
+                                variant="outline"
                                 size="sm"
                                 className="gap-1 h-8 px-3 text-xs"
-                                disabled={actionLoading}
-                                onClick={() => handleAcceptPartnership(partner.id)}
+                                onClick={() => setMessagePartner(partner)}
                               >
-                                Accept request
+                                <MessageCircle className="h-3.5 w-3.5" />
+                                Message
                               </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 h-8 px-3 text-xs"
+                                onClick={() => setMilestonePartner(partner)}
+                                disabled={partner.status !== "active"}
+                              >
+                                <Flag className="h-3.5 w-3.5" />
+                                Milestone
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 h-8 px-3 text-xs"
+                                onClick={() => setMeetingPartner(partner)}
+                                disabled={partner.status !== "active"}
+                              >
+                                <CalendarDays className="h-3.5 w-3.5" />
+                                Meeting link
+                              </Button>
+                              {partner.isIncomingPending && (
+                                <Button
+                                  size="sm"
+                                  className="gap-1 h-8 px-3 text-xs"
+                                  disabled={actionLoading}
+                                  onClick={() => handleAcceptPartnership(partner.id)}
+                                >
+                                  Accept request
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </section>

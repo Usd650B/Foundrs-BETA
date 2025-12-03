@@ -65,6 +65,13 @@ const Auth = () => {
         });
         if (error) throw error;
 
+        try {
+          localStorage.setItem("foundrs:onboardingPending", "true");
+          localStorage.removeItem("foundrs:onboardingCompleted");
+        } catch (storageError) {
+          console.warn("Unable to persist onboarding flag", storageError);
+        }
+
         toast({
           title: "Account created!",
           description: "Welcome to the community of builders.",

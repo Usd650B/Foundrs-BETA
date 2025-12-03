@@ -89,9 +89,16 @@ const GoalFeed = ({ currentUserId, hideCurrentUserGoals = false }: GoalFeedProps
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const filtered = (data || []).filter((goal) =>
-        hideCurrentUserGoals ? goal.user_id !== currentUserId : true
-      );
+      const now = new Date();
+      const filtered = (data || [])
+        .filter((goal) => (hideCurrentUserGoals ? goal.user_id !== currentUserId : true))
+        .filter((goal) => {
+          const limit = Math.min(Math.max(goal.join_limit ?? 3, 1), 10);
+          const usedSlots = Math.min(goal.join_current_count ?? 0, limit);
+          const hasSlots = usedSlots < limit;
+          const hasTime = !goal.due_at || new Date(goal.due_at) > now;
+          return hasSlots && hasTime;
+        });
       setGoals(filtered);
     } catch (error) {
       console.error("Error fetching goals:", error);

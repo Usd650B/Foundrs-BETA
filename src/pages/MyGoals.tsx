@@ -26,11 +26,18 @@ interface Goal {
   } | null;
 }
 
+const sectionConfig = [
+  { id: "add-goal", label: "Add new goal", description: "Plan today's focus" },
+  { id: "recent-goals", label: "Recent goals", description: "Latest commitments" },
+  { id: "goal-library", label: "Goals library", description: "Archive & references" },
+];
+
 const MyGoals = () => {
   const [user, setUser] = useState<User | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState(sectionConfig[0].id);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -133,6 +140,9 @@ const MyGoals = () => {
     }
   };
 
+  const recentGoals = goals.slice(0, 5);
+  const libraryGoals = goals;
+
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,90 +167,185 @@ const MyGoals = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-        <section>
-          <GoalInput userId={user.id} />
-        </section>
-
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">Recent goals</h2>
-            <Button size="sm" variant="outline" onClick={() => fetchGoals(user.id)}>Refresh</Button>
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 grid gap-6 lg:grid-cols-[220px_1fr]">
+        <aside className="space-y-2 border border-border rounded-2xl p-4 h-fit">
+          <div className="mb-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Navigate</p>
           </div>
+          {sectionConfig.map(({ id, label, description }) => (
+            <button
+              key={id}
+              onClick={() => {
+                setActiveSection(id);
+              }}
+              className={`w-full text-left rounded-xl border px-3 py-2 transition ${
+                activeSection === id
+                  ? "border-primary/30 bg-primary/5 text-primary"
+                  : "border-border bg-background hover:border-primary/30"
+              }`}
+            >
+              <p className="text-sm font-semibold">{label}</p>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </button>
+          ))}
+          <Button variant="outline" size="sm" className="w-full" onClick={() => fetchGoals(user.id)}>
+            Refresh data
+          </Button>
+        </aside>
 
-          {goals.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">No goals yet. Add your first goal above.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            goals.map((goal) => (
-              <Card key={goal.id} className="border-border/60">
-                <CardHeader className="flex-row items-center justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-base font-semibold">
-                      {goal.goal_text}
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {goal.due_at ? new Date(goal.due_at).toLocaleString() : "No time limit"}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className={`capitalize ${goal.priority === "critical" ? "bg-red-500/20 text-red-700" : goal.priority === "high" ? "bg-amber-500/20 text-amber-700" : goal.priority === "low" ? "bg-emerald-500/20 text-emerald-700" : ""}`}
-                      >
-                        {goal.priority || "medium"} priority
-                      </Badge>
-                      {goal.completed && (
-                        <Badge className="bg-emerald-500/20 text-emerald-700 flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Completed
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  {!goal.completed && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleClaimGoal(goal)}
-                      disabled={claimingId === goal.id}
-                    >
-                      {claimingId === goal.id ? "Claiming..." : "Claim finish"}
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {goal.success_metric && (
-                    <div>
-                      <p className="text-muted-foreground">Success metric</p>
-                      <p className="font-medium">{goal.success_metric}</p>
-                    </div>
-                  )}
-                  {goal.blockers && (
-                    <div>
-                      <p className="text-muted-foreground">Potential blockers</p>
-                      <p className="font-medium">{goal.blockers}</p>
-                    </div>
-                  )}
-                  {goal.motivation && (
-                    <div>
-                      <p className="text-muted-foreground">Motivation</p>
-                      <p className="font-medium flex items-center gap-1">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        {goal.motivation}
-                      </p>
-                    </div>
-                  )}
-                  <div className="text-xs text-muted-foreground">
-                    Added {new Date(goal.created_at).toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+        <div className="space-y-10">
+          {activeSection === "add-goal" && (
+            <section>
+              <GoalInput userId={user.id} />
+            </section>
           )}
-        </section>
+
+          {activeSection === "recent-goals" && (
+            <section className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Latest</p>
+                    <h2 className="text-lg font-semibold">Recent goals</h2>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Showing {recentGoals.length} of {goals.length}
+                  </Badge>
+                </div>
+              </div>
+
+              {recentGoals.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-10 text-center">
+                    <p className="text-muted-foreground">No recent goals yet. Add one from the Add Goal tab.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                recentGoals.map((goal) => (
+                  <Card key={goal.id} className="border-border/60">
+                    <CardHeader className="flex-row items-center justify-between gap-4">
+                      <div>
+                        <CardTitle className="text-base font-semibold">{goal.goal_text}</CardTitle>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {goal.due_at ? new Date(goal.due_at).toLocaleString() : "No time limit"}
+                          </Badge>
+                          <Badge
+                            variant="secondary"
+                            className={`capitalize ${
+                              goal.priority === "critical"
+                                ? "bg-red-500/20 text-red-700"
+                                : goal.priority === "high"
+                                  ? "bg-amber-500/20 text-amber-700"
+                                  : goal.priority === "low"
+                                    ? "bg-emerald-500/20 text-emerald-700"
+                                    : ""
+                            }`}
+                          >
+                            {goal.priority || "medium"} priority
+                          </Badge>
+                          {goal.completed && (
+                            <Badge className="bg-emerald-500/20 text-emerald-700 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Completed
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {!goal.completed && (
+                        <Button size="sm" onClick={() => handleClaimGoal(goal)} disabled={claimingId === goal.id}>
+                          {claimingId === goal.id ? "Claiming..." : "Mark complete"}
+                        </Button>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {goal.success_metric && (
+                        <div>
+                          <p className="text-muted-foreground">Success metric</p>
+                          <p className="font-medium">{goal.success_metric}</p>
+                        </div>
+                      )}
+                      {goal.blockers && (
+                        <div>
+                          <p className="text-muted-foreground">Potential blockers</p>
+                          <p className="font-medium">{goal.blockers}</p>
+                        </div>
+                      )}
+                      {goal.motivation && (
+                        <div>
+                          <p className="text-muted-foreground">Motivation</p>
+                          <p className="font-medium flex items-center gap-1">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            {goal.motivation}
+                          </p>
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Added {new Date(goal.created_at).toLocaleString()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </section>
+          )}
+
+          {activeSection === "goal-library" && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Archive</p>
+                  <h2 className="text-lg font-semibold">Goals library</h2>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  Total saved: {libraryGoals.length}
+                </Badge>
+              </div>
+
+              {libraryGoals.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-10 text-center">
+                    <p className="text-muted-foreground">Once you start shipping, your archive will live here.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {libraryGoals.map((goal) => (
+                    <Card key={`library-${goal.id}`} className="border-border/60">
+                      <CardContent className="pt-6 space-y-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold leading-snug">{goal.goal_text}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Added {new Date(goal.created_at).toLocaleDateString()} · {goal.priority || "medium"} priority
+                            </p>
+                          </div>
+                          <Badge variant={goal.completed ? "default" : "secondary"} className="capitalize">
+                            {goal.completed ? "Completed" : "In progress"}
+                          </Badge>
+                        </div>
+                        {goal.motivation && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{goal.motivation}</p>
+                        )}
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            Due {goal.due_at ? new Date(goal.due_at).toLocaleDateString() : "Flexible"}
+                          </span>
+                          {!goal.completed && (
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleClaimGoal(goal)}>
+                              Mark finished
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+        </div>
       </main>
     </div>
   );
